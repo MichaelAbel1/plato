@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/cloudwego/hertz v0.2.1
 	github.com/go-redis/redis/v9 v9.0.0-rc.2
-	github.com/gookit/color v1.5.1
+	github.com/gookit/color v1.5.4
 	github.com/rocket049/gocui v0.3.2
 	github.com/spf13/cobra v1.5.0
 	google.golang.org/protobuf v1.28.1
@@ -72,7 +72,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.12.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 	github.com/subosito/gotenv v1.3.0 // indirect
 	github.com/tidwall/gjson v1.13.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -87,7 +87,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.9.0
 	go.uber.org/zap v1.22.0
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
-	golang.org/x/sys v0.2.0
+	golang.org/x/sys v0.10.0
 	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/grpc v1.48.0
 	gopkg.in/ini.v1 v1.66.4 // indirect

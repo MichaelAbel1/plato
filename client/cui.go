@@ -5,11 +5,12 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"net"
+
+	// "net"
 	"time"
 
 	"github.com/gookit/color"
-	"github.com/hardcore-os/plato/common/sdk"
+	"github.com/hardcore-os/plato/client/sdk"
 	"github.com/rocket049/gocui"
 )
 
@@ -60,7 +61,7 @@ func viewPrint(g *gocui.Gui, name, msg string, newline bool) {
 	g.Update(out.Show)
 }
 
-//doRecv work in goroutine
+// doRecv work in goroutine
 func doRecv(g *gocui.Gui) {
 	recvChannel := chat.Recv()
 	for msg := range recvChannel {
@@ -95,8 +96,9 @@ func doSay(g *gocui.Gui, cv *gocui.View) {
 				ToUserID:   "222222",
 				Content:    string(p)}
 			// 先把自己说的话显示到消息流中
-			idKey := fmt.Sprintf("%d", chat.GetCurClientID())
-			viewPrint(g, "me:"+idKey, msg.Content, false)
+			// idKey := fmt.Sprintf("%d", chat.GetCurClientID())
+			// viewPrint(g, "me:"+idKey, msg.Content, false)
+			viewPrint(g, "me", msg.Content, false)
 			chat.Send(msg)
 		}
 		v.Autoscroll = true
@@ -167,7 +169,7 @@ func viewInput(g *gocui.Gui, x0, y0, x1, y1 int) error {
 }
 
 func viewHead(g *gocui.Gui, x0, y0, x1, y1 int) error {
-	if v, err := g.SetView("head", x0, y0, x1, y1); err != nil {
+	if v, err := g.SetView("head", x0, y0, x1, y1); err != nil { // SetView 函数首先会尝试查找是否已经存在指定名称的视图, 不存在则创建
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -228,7 +230,8 @@ func pasteDown(g *gocui.Gui, cv *gocui.View) error {
 
 func RunMain() {
 	// step1 创建chat的核心对象
-	chat = sdk.NewChat(net.ParseIP("0.0.0.0"), 8900, "logic", "12312321", "2131")
+	// chat = sdk.NewChat(net.ParseIP("0.0.0.0"), 8900, "logic", "12312321", "2131")
+	chat = sdk.NewChat("127.0.0.1:8080", "logic", "12312321", "2131")
 	// step2 创建 GUI 图层对象并进行参与与回调函数的配置
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
@@ -242,30 +245,30 @@ func RunMain() {
 	g.SetManagerFunc(layout)
 
 	// 注册回调事件
-	if err := g.SetKeybinding("main", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
+	if err := g.SetKeybinding("main", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil { // 当用户按下 Ctrl+C 时，执行 quit 函数
 		log.Panicln(err)
 	}
 
-	if err := g.SetKeybinding("main", gocui.KeyEnter, gocui.ModNone, viewUpdate); err != nil {
+	if err := g.SetKeybinding("main", gocui.KeyEnter, gocui.ModNone, viewUpdate); err != nil { // 当用户按下 Enter 键时，执行 viewUpdate 函数
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding("main", gocui.KeyPgup, gocui.ModNone, viewUpScroll); err != nil {
+	if err := g.SetKeybinding("main", gocui.KeyPgup, gocui.ModNone, viewUpScroll); err != nil { // 当用户按下 Page Up 键时，执行 viewUpScroll 函数
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding("main", gocui.KeyPgdn, gocui.ModNone, viewDownScroll); err != nil {
+	if err := g.SetKeybinding("main", gocui.KeyPgdn, gocui.ModNone, viewDownScroll); err != nil { // 当用户按下 Page Down 键时，执行 viewDownScroll 函数。
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding("main", gocui.KeyArrowDown, gocui.ModNone, pasteDown); err != nil {
+	if err := g.SetKeybinding("main", gocui.KeyArrowDown, gocui.ModNone, pasteDown); err != nil { // 当用户按下向下箭头键时，执行 pasteDown 函数
 		log.Panicln(err)
 	}
-	if err := g.SetKeybinding("main", gocui.KeyArrowUp, gocui.ModNone, pasteUP); err != nil {
+	if err := g.SetKeybinding("main", gocui.KeyArrowUp, gocui.ModNone, pasteUP); err != nil { // 当用户按下向上箭头键时，执行 pasteUP 函数
 		log.Panicln(err)
 	}
-	go func() {
-		time.Sleep(10 * time.Second)
-		// 重新连接
-		chat.ReConn()
-	}()
+	// go func() {
+	// 	time.Sleep(10 * time.Second)
+	// 	// 重新连接
+	// 	chat.ReConn()
+	// }()
 	// 启动消费函数
 	go doRecv(g)
 	if err := g.MainLoop(); err != nil {
