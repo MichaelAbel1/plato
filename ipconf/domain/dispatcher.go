@@ -75,7 +75,7 @@ func (dp *Dispatcher) addNode(event *source.Event) {
 		ok bool
 	)
 	if ed, ok = dp.candidateTable[event.Key()]; !ok { // 不存在
-		ed = NewEndport(event.IP, event.Port)
+		ed = NewEndport(event.IP, event.Port) // 创建一个对 IP:Port 的监听器，并持续监听统计信息
 		dp.candidateTable[event.Key()] = ed
 	}
 	ed.UpdateStat(&Stat{

@@ -19,7 +19,7 @@ func GetEndpointsForDiscovery() []string {
 	return viper.GetStringSlice("discovery.endpoints")
 }
 
-// 获取连接服务发现集群的超时时间 单位伟秒
+// 获取连接服务发现集群的超时时间 单位为秒
 func GetTimeoutForDiscovery() time.Duration {
 	return viper.GetDuration("discovery.timeout") * time.Second
 }

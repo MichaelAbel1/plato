@@ -17,8 +17,9 @@ type Response struct {
 
 // GetIpInfoList API 适配应用层
 func GetIpInfoList(c context.Context, ctx *app.RequestContext) {
-	defer func() {
-		if err := recover(); err != nil {
+	// Hertz 框架自动将请求相关的信息封装到c和ctx
+	defer func() { // 以防一次错误调用，导致整个服务崩溃
+		if err := recover(); err != nil { // recover() 用于捕获异常。当发生 panic 时，recover() 能够拦截异常并返回错误值。
 			ctx.JSON(consts.StatusBadRequest, utils.H{"err": err})
 		}
 	}()

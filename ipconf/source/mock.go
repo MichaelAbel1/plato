@@ -21,6 +21,7 @@ func testServiceRegister(ctx *context.Context, port, node string) {
 				"message_bytes": float64(rand.Int63n(1231232131556)),
 			},
 		}
+		// 将 time.Now().Unix() 作为租约 TTL 一般不是一个合理（很大）的做法，如果为了生成生成一个租约 ID 也行
 		sr, err := discovery.NewServiceRegister(ctx, fmt.Sprintf("%s/%s", config.GetServicePathForIPConf(), node), &ed, time.Now().Unix())
 		if err != nil {
 			panic(err)

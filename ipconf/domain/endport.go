@@ -21,7 +21,7 @@ func NewEndport(ip, port string) *Endport {
 	}
 	ed.window = newStateWindow()
 	ed.Stats = ed.window.getStat()
-	go func() {
+	go func() { // 启动一个 goroutine 来监听并处理 statChan 通道中的统计数据。每当接收到新的统计数据时，更新滑动窗口的状态，并通过 atomic.SwapPointer 更新 ed.Stats。
 		for stat := range ed.window.statChan {
 			ed.window.appendStat(stat)
 			newStat := ed.window.getStat()

@@ -10,7 +10,7 @@ import (
 
 func Init() {
 	eventChan = make(chan *Event)
-	ctx := context.Background()
+	ctx := context.Background() // 创建一个空的 context
 	go DataHandler(&ctx)
 	if config.IsDebug() {
 		ctx := context.Background()
