@@ -25,21 +25,7 @@ func RunMain(path string) {
 	initEpoll(ln, runProc)
 	fmt.Println("-------------im gateway stated------------")
 	select {}
-	// cmdChannel = make(chan *service.CmdContext, config.GetGatewayCmdChannelNum())
-	// s := prpc.NewPServer(
-	// 	prpc.WithServiceName(config.GetGatewayServiceName()),
-	// 	prpc.WithIP(config.GetGatewayServiceAddr()),
-	// 	prpc.WithPort(config.GetGatewayRPCServerPort()), prpc.WithWeight(config.GetGatewayRPCWeight()))
-	// fmt.Println(config.GetGatewayServiceName(), config.GetGatewayServiceAddr(), config.GetGatewayRPCServerPort(), config.GetGatewayRPCWeight())
-	// s.RegisterService(func(server *grpc.Server) {
-	// 	service.RegisterGatewayServer(server, &service.Service{CmdChannel: cmdChannel})
-	// })
-	// // 启动rpc 客户端
-	// client.Init()
-	// // 启动 命令处理写协程
-	// go cmdHandler()
-	// // 启动 rpc server
-	// s.Start(context.TODO())
+
 }
 
 func runProc(c *connection, ep *epoller) {
@@ -68,38 +54,4 @@ func runProc(c *connection, ep *epoller) {
 	if err != nil {
 		fmt.Errorf("runProc:err:%+v\n", err.Error())
 	}
-}
-
-// func cmdHandler() {
-// 	for cmd := range cmdChannel {
-// 		// 异步提交到协池中完成发送任务
-// 		switch cmd.Cmd {
-// 		case service.DelConnCmd:
-// 			wPool.Submit(func() { closeConn(cmd) })
-// 		case service.PushCmd:
-// 			wPool.Submit(func() { sendMsgByCmd(cmd) })
-// 		default:
-// 			panic("command undefined")
-// 		}
-// 	}
-// }
-// func closeConn(cmd *service.CmdContext) {
-// 	if connPtr, ok := ep.tables.Load(cmd.ConnID); ok {
-// 		conn, _ := connPtr.(*connection)
-// 		conn.Close()
-// 	}
-// }
-// func sendMsgByCmd(cmd *service.CmdContext) {
-// 	if connPtr, ok := ep.tables.Load(cmd.ConnID); ok {
-// 		conn, _ := connPtr.(*connection)
-// 		dp := tcp.DataPgk{
-// 			Len:  uint32(len(cmd.Payload)),
-// 			Data: cmd.Payload,
-// 		}
-// 		tcp.SendData(conn.conn, dp.Marshal())
-// 	}
-// }
-
-func getEndpoint() string {
-	return fmt.Sprintf("%s:%d", config.GetGatewayServiceAddr(), config.GetGatewayRPCServerPort())
 }

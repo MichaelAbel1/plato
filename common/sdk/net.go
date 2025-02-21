@@ -46,6 +46,7 @@ func newConnet(ip net.IP, port int) *connect {
 			data, err := tcp.ReadData(clientConn.conn)
 			if err != nil {
 				fmt.Printf("ReadData.err=%+v \n", err)
+				// clientConn.close()
 				// return
 			}
 			msg := &Message{}

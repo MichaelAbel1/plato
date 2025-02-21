@@ -65,8 +65,11 @@ func (e *ePool) createAcceptProcess() {
 					}
 					fmt.Errorf("accept err: %v", e)
 				}
-				c := NewConnection(conn)
-				ep.addTask(c)
+				c := connection{
+					conn: conn,
+					fd:   socketFD(conn),
+				}
+				ep.addTask(&c)
 			}
 		}()
 	}
@@ -151,8 +154,8 @@ func (e *epoller) add(conn *connection) error {
 	if err != nil {
 		return err
 	}
-	// e.fdToConnTable.Store(conn.fd, conn)
-	ep.tables.Store(conn.id, conn)
+	e.fdToConnTable.Store(conn.fd, conn)
+	// ep.tables.Store(conn.id, conn)
 	// conn.BindEpoller(e)
 	return nil
 }
@@ -163,7 +166,7 @@ func (e *epoller) remove(c *connection) error {
 	if err != nil {
 		return err
 	}
-	ep.tables.Delete(c.id)
+	// ep.tables.Delete(c.id)
 	e.fdToConnTable.Delete(c.fd)
 	return nil
 }
