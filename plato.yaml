@@ -6,3 +6,16 @@ discovery:
   timeout: 5
 ip_conf:
   service_path: /plato/ip_dispatcher
+gateway:
+  service_name: "plato.access.gateway"
+  service_addr: "127.0.0.1"
+  tcp_max_num: 70000
+  epoll_channel_num: 100
+  epoll_num: 8
+  epoll_wait_queue_size: 100
+  tcp_server_port: 8900
+  rpc_server_port: 8901
+  worker_pool_num: 1024
+  cmd_channel_num: 2048
+  weight: 100
+  state_server_endpoint: "127.0.0.1:8902"
