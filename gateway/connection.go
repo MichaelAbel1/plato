@@ -16,7 +16,7 @@ const (
 
 	timeLeft    = uint8(16) // timeLeft = sequenceBits // 时间戳向左偏移量
 	versionLeft = uint8(63) // 左移动到最高位
-	// 2020-05-20 08:00:00 +0800 CST
+	// 2024-05-20 08:00:00 +0800 CST
 	twepoch = int64(1589923200000) // 常量时间戳(毫秒)
 )
 

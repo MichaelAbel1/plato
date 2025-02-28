@@ -41,7 +41,7 @@ func newConnet(ip net.IP, port int) *connect {
 		return nil
 	}
 	clientConn.conn = conn
-	go func() {
+	go func() { // 开一个协程，读取连接上的数据
 		for {
 			data, err := tcp.ReadData(clientConn.conn)
 			if err != nil {
@@ -50,7 +50,7 @@ func newConnet(ip net.IP, port int) *connect {
 				// return
 			}
 			msg := &Message{}
-			json.Unmarshal(data, msg)
+			json.Unmarshal(data, msg) // 反序列化
 			clientConn.recvChan <- msg
 		}
 	}()

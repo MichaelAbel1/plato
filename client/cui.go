@@ -71,7 +71,8 @@ func doRecv(g *gocui.Gui) {
 			case sdk.MsgTypeText:
 				viewPrint(g, msg.Name, msg.Content, false)
 			case sdk.MsgTypeAck:
-				//TODO 默认不处理
+				// 记录或打印确认信息
+				log.Printf("收到消息确认：消息Content=%s", msg.Content)
 			}
 		}
 	}

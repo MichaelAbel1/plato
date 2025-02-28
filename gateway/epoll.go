@@ -111,8 +111,8 @@ func (e *ePool) startEProc() {
 		case <-e.done:
 			return
 		default:
-			connections, err := ep.wait(200) // 200ms 一次轮询避免 防止忙轮询
-			if err != nil && err != syscall.EINTR {
+			connections, err := ep.wait(200)        // 200ms 一次轮询 防止忙轮询
+			if err != nil && err != syscall.EINTR { // syscall.EINTR 表示系统调用被中断，通常可以忽略
 				fmt.Printf("failed to epoll wait %v\n", err)
 				continue
 			}
@@ -120,7 +120,7 @@ func (e *ePool) startEProc() {
 				if conn == nil {
 					break
 				}
-				e.f(conn, ep)
+				e.f(conn, ep) // 调用回调函数处理事件
 			}
 		}
 	}
@@ -132,7 +132,10 @@ func (e *ePool) addTask(c *connection) {
 
 // epoller 对象 轮询器
 type epoller struct {
-	fd            int
+	fd int
+	// 不需要显式初始化
+	// 可以直接使用多个 goroutine 同时读写，而无需额外的锁
+	// 适用于这种读多写少的场景
 	fdToConnTable sync.Map
 }
 
@@ -147,18 +150,41 @@ func newEpoller() (*epoller, error) {
 }
 
 // TODO: 默认水平触发模式,可采用非阻塞FD,优化边沿触发模式
+// func (e *epoller) add(conn *connection) error {
+// 	// Extract file descriptor associated with the connection
+// 	fd := conn.fd
+// 	// EPOLLIN：表示有数据可读。
+// 	// EPOLLHUP：表示连接挂断。
+// 	// Fd: int32(fd): 将文件描述符设置到epoll event中。
+// 	err := unix.EpollCtl(e.fd, syscall.EPOLL_CTL_ADD, fd, &unix.EpollEvent{Events: unix.EPOLLIN | unix.EPOLLHUP, Fd: int32(fd)})
+// 	if err != nil {
+// 		return err
+// 	}
+// 	e.fdToConnTable.Store(conn.fd, conn)
+// 	// ep.tables.Store(conn.id, conn)
+// 	// conn.BindEpoller(e)
+// 	return nil
+// }
+
+// 优化后的epoll
 func (e *epoller) add(conn *connection) error {
-	// Extract file descriptor associated with the connection
 	fd := conn.fd
-	err := unix.EpollCtl(e.fd, syscall.EPOLL_CTL_ADD, fd, &unix.EpollEvent{Events: unix.EPOLLIN | unix.EPOLLHUP, Fd: int32(fd)})
+	// 设置为非阻塞模式
+	if err := unix.SetNonblock(fd, true); err != nil {
+		return err
+	}
+	// unix.EPOLLET：表示将 epoll 设置为边缘触发（edge-triggered）模式。
+	// EPOLLIN：表示有数据可读。
+	// EPOLLHUP：表示连接挂断。
+	err := unix.EpollCtl(e.fd, syscall.EPOLL_CTL_ADD, fd, &unix.EpollEvent{Events: uint32(unix.EPOLLIN|unix.EPOLLHUP) | unix.EPOLLET, Fd: int32(fd)})
 	if err != nil {
 		return err
 	}
+
 	e.fdToConnTable.Store(conn.fd, conn)
-	// ep.tables.Store(conn.id, conn)
-	// conn.BindEpoller(e)
 	return nil
 }
+
 func (e *epoller) remove(c *connection) error {
 	subTcpNum()
 	fd := c.fd
@@ -170,6 +196,8 @@ func (e *epoller) remove(c *connection) error {
 	e.fdToConnTable.Delete(c.fd)
 	return nil
 }
+
+// 返回触发事件的连接列表和错误
 func (e *epoller) wait(msec int) ([]*connection, error) {
 	events := make([]unix.EpollEvent, config.GetGatewayEpollWaitQueueSize())
 	n, err := unix.EpollWait(e.fd, events, msec)
@@ -191,14 +219,24 @@ func socketFD(conn *net.TCPConn) int {
 	return int(pfdVal.FieldByName("Sysfd").Int())
 }
 
+// 更安全，更优的做法
+// func socketFD(conn *net.TCPConn) (int, error) {
+// 	file, err := conn.File()
+// 	if err != nil {
+// 			return 0, err
+// 	}
+// 	defer file.Close() // 记得关闭文件
+// 	return int(file.Fd()), nil
+// }
+
 // 设置go 进程打开文件数的限制
 func setLimit() {
-	var rLimit syscall.Rlimit
-	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
+	var rLimit syscall.Rlimit                                                 // 用于存储文件描述符的限制信息用于存储文件描述符的限制信息
+	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil { // 获取当前进程打开文件数的限制
 		panic(err)
 	}
-	rLimit.Cur = rLimit.Max
-	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
+	rLimit.Cur = rLimit.Max                                                   // 设置当前进程打开文件数的限制为最大值
+	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil { // 设置当前进程打开文件数的限制
 		panic(err)
 	}
 
@@ -222,6 +260,7 @@ func checkTcp() bool {
 	return num <= maxTcpNum
 }
 
+// 启用给定 TCP 连接的 keep-alive 探测。这有助于检测和关闭空闲的无效连接，从而释放资源并提高应用程序的可靠性
 func setTcpConifg(c *net.TCPConn) {
 	_ = c.SetKeepAlive(true)
 }

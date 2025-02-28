@@ -37,7 +37,7 @@ func NewChat(ip net.IP, port int, nick, userID, sessionID string) *Chat {
 		Nick:      nick,
 		UserID:    userID,
 		SessionID: sessionID,
-		conn:      newConnet(ip, port),
+		conn:      newConnet(ip, port), // 一个聊天室一个连接，在建立连接后就不断监听，并读取数据
 	}
 }
 

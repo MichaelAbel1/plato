@@ -42,7 +42,7 @@ func runProc(c *connection, ep *epoller) {
 		}
 		return
 	}
-	err = wPool.Submit(func() {
+	err = wPool.Submit(func() { // 利用工作线程池管理并发任务的执行，以提高程序的吞吐量和资源利用率，同时避免创建过多的 goroutine 导致性能下降
 		// step2:交给 state server rpc 处理
 		// client.SendMsg(&ctx, getEndpoint(), c.id, dataBuf)
 		bytes := tcp.DataPgk{
