@@ -65,11 +65,23 @@ func (e *ePool) createAcceptProcess() {
 					}
 					fmt.Errorf("accept err: %v", e)
 				}
+				// fd, err := socketFD(conn)
+				// if err == nil {
+				// 	c := connection{
+				// 		conn: conn,
+				// 		fd:   fd,
+				// 	}
+				// 	ep.addTask(&c)
+				// } else {
+				// 	_ = conn.Close()
+				// 	continue
+				// }
 				c := connection{
 					conn: conn,
 					fd:   socketFD(conn),
 				}
 				ep.addTask(&c)
+
 			}
 		}()
 	}
@@ -136,7 +148,7 @@ type epoller struct {
 	// 不需要显式初始化
 	// 可以直接使用多个 goroutine 同时读写，而无需额外的锁
 	// 适用于这种读多写少的场景
-	fdToConnTable sync.Map
+	// fdToConnTable sync.Map
 }
 
 func newEpoller() (*epoller, error) {
@@ -161,7 +173,7 @@ func newEpoller() (*epoller, error) {
 // 		return err
 // 	}
 // 	e.fdToConnTable.Store(conn.fd, conn)
-// 	// ep.tables.Store(conn.id, conn)
+// 	ep.tables.Store(conn.id, conn)
 // 	// conn.BindEpoller(e)
 // 	return nil
 // }
@@ -181,7 +193,8 @@ func (e *epoller) add(conn *connection) error {
 		return err
 	}
 
-	e.fdToConnTable.Store(conn.fd, conn)
+	// e.fdToConnTable.Store(fd, conn)
+	ep.tables.Store(fd, conn)
 	return nil
 }
 
@@ -192,8 +205,8 @@ func (e *epoller) remove(c *connection) error {
 	if err != nil {
 		return err
 	}
-	// ep.tables.Delete(c.id)
-	e.fdToConnTable.Delete(c.fd)
+	ep.tables.Delete(fd)
+	// e.fdToConnTable.Delete(c.fd)
 	return nil
 }
 
@@ -206,12 +219,13 @@ func (e *epoller) wait(msec int) ([]*connection, error) {
 	}
 	var connections []*connection
 	for i := 0; i < n; i++ {
-		if conn, ok := e.fdToConnTable.Load(int(events[i].Fd)); ok {
+		if conn, ok := ep.tables.Load(int(events[i].Fd)); ok {
 			connections = append(connections, conn.(*connection))
 		}
 	}
 	return connections, nil
 }
+
 func socketFD(conn *net.TCPConn) int {
 	tcpConn := reflect.Indirect(reflect.ValueOf(*conn)).FieldByName("conn")
 	fdVal := tcpConn.FieldByName("fd")
@@ -220,13 +234,22 @@ func socketFD(conn *net.TCPConn) int {
 }
 
 // 更安全，更优的做法
+// 但是这种做法会导致更多的fd消耗
 // func socketFD(conn *net.TCPConn) (int, error) {
 // 	file, err := conn.File()
 // 	if err != nil {
-// 			return 0, err
+// 		return 0, err
 // 	}
-// 	defer file.Close() // 记得关闭文件
-// 	return int(file.Fd()), nil
+// 	defer file.Close()
+
+// 	// 复制文件描述符，避免 file.Close() 影响 conn 导致报错bad file descriptor
+// 	fd := int(file.Fd())
+// 	newFD, err := syscall.Dup(fd)
+// 	if err != nil {
+// 		return 0, err
+// 	}
+
+// 	return newFD, nil
 // }
 
 // 设置go 进程打开文件数的限制

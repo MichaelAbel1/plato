@@ -6,6 +6,16 @@ discovery:
   timeout: 5
 ip_conf:
   service_path: /plato/ip_dispatcher
+prpc:
+  discov:
+    name: etcd
+    endpoints:
+      - localhost:2379
+  trace:
+    enable: true
+    url: http://127.0.0.1:14268/api/traces
+    service_name: plato
+    sampler: 1.0
 gateway:
   service_name: "plato.access.gateway"
   service_addr: "127.0.0.1"
@@ -19,3 +29,9 @@ gateway:
   cmd_channel_num: 2048
   weight: 100
   state_server_endpoint: "127.0.0.1:8902"
+state: 
+  service_name: "plato.access.state"
+  servide_addr: "127.0.0.1"
+  cmd_channel_num: 2048
+  server_port: 8902
+  weight: 100

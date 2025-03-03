@@ -21,14 +21,6 @@ type connect struct {
 	sendChan, recvChan chan *Message
 }
 
-// func newConnet(serverAddr string) *connect {
-// 	return &connect{
-// 		serverAddr: serverAddr,
-// 		sendChan:   make(chan *Message),
-// 		recvChan:   make(chan *Message),
-// 	}
-// }
-
 func newConnet(ip net.IP, port int) *connect {
 	clientConn := &connect{
 		sendChan: make(chan *Message),
@@ -46,11 +38,12 @@ func newConnet(ip net.IP, port int) *connect {
 			data, err := tcp.ReadData(clientConn.conn)
 			if err != nil {
 				fmt.Printf("ReadData.err=%+v \n", err)
-				// clientConn.close()
-				// return
 			}
 			msg := &Message{}
-			json.Unmarshal(data, msg) // 反序列化
+			err = json.Unmarshal(data, msg) // 反序列化
+			if err != nil {
+				panic(err)
+			}
 			clientConn.recvChan <- msg
 		}
 	}()
@@ -59,7 +52,6 @@ func newConnet(ip net.IP, port int) *connect {
 
 func (c *connect) send(data *Message) {
 	// 直接发送给接收方
-	// c.recvChan <- data
 	bytes, _ := json.Marshal(data)
 	dataPgk := tcp.DataPgk{
 		Data: bytes,
