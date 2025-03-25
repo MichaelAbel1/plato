@@ -76,11 +76,8 @@ func (e *ePool) createAcceptProcess() {
 				// 	_ = conn.Close()
 				// 	continue
 				// }
-				c := connection{
-					conn: conn,
-					fd:   socketFD(conn),
-				}
-				ep.addTask(&c)
+				c := NewConnection(conn)
+				ep.addTask(c)
 
 			}
 		}()
@@ -148,7 +145,7 @@ type epoller struct {
 	// 不需要显式初始化
 	// 可以直接使用多个 goroutine 同时读写，而无需额外的锁
 	// 适用于这种读多写少的场景
-	// fdToConnTable sync.Map
+	fdToConnTable sync.Map
 }
 
 func newEpoller() (*epoller, error) {
@@ -193,8 +190,9 @@ func (e *epoller) add(conn *connection) error {
 		return err
 	}
 
-	// e.fdToConnTable.Store(fd, conn)
-	ep.tables.Store(fd, conn)
+	e.fdToConnTable.Store(fd, conn)
+	ep.tables.Store(conn.id, conn)
+	conn.BindEpoller(e)
 	return nil
 }
 
@@ -205,8 +203,8 @@ func (e *epoller) remove(c *connection) error {
 	if err != nil {
 		return err
 	}
-	ep.tables.Delete(fd)
-	// e.fdToConnTable.Delete(c.fd)
+	ep.tables.Delete(c.id)
+	e.fdToConnTable.Delete(c.fd)
 	return nil
 }
 
@@ -219,7 +217,7 @@ func (e *epoller) wait(msec int) ([]*connection, error) {
 	}
 	var connections []*connection
 	for i := 0; i < n; i++ {
-		if conn, ok := ep.tables.Load(int(events[i].Fd)); ok {
+		if conn, ok := e.fdToConnTable.Load(int(events[i].Fd)); ok {
 			connections = append(connections, conn.(*connection))
 		}
 	}

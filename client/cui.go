@@ -232,7 +232,7 @@ func pasteDown(g *gocui.Gui, cv *gocui.View) error {
 
 func RunMain() {
 	// step1 创建chat的核心对象
-	chat = sdk.NewChat(net.ParseIP("0.0.0.0"), 8900, "logic", "12312321", "2131")
+	chat = sdk.NewChat(net.ParseIP("0.0.0.0"), 8900, "logic", "12312321", "2131", 0, false)
 	// step2 创建 GUI 图层对象并进行参与与回调函数的配置
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
@@ -265,6 +265,17 @@ func RunMain() {
 	if err := g.SetKeybinding("main", gocui.KeyArrowUp, gocui.ModNone, pasteUP); err != nil { // 当用户按下向上箭头键时，执行 pasteUP 函数
 		log.Panicln(err)
 	}
+
+	go func() {
+		time.Sleep(10 * time.Second)
+		// 模拟一次断线
+		chat.Close()
+		time.Sleep(3 * time.Second)
+		connID := chat.GetConnID()
+		// 重新连接
+		chat = sdk.NewChat(net.ParseIP("0.0.0.0"), 8900, "logic", "12312321", "2131", connID, true)
+		go doRecv(g)
+	}()
 
 	// 启动消费函数
 	go doRecv(g)

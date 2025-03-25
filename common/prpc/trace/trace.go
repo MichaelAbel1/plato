@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	TraceName = "plato-trace"
+	TraceName = "plato-trace" // 定义追踪名称，用于标识追踪。
 )
 
 type metadataSupplier struct {
@@ -30,6 +30,7 @@ func (s *metadataSupplier) Set(key, value string) {
 	s.metadata.Set(key, value)
 }
 
+// 获取 gRPC 元数据中的所有键
 func (s *metadataSupplier) Keys() []string {
 	out := make([]string, 0, len(*s.metadata))
 	for key := range *s.metadata {
@@ -40,6 +41,7 @@ func (s *metadataSupplier) Keys() []string {
 }
 
 // Inject set cross-cutting concerns from the Context into the metadata.
+// 将 OpenTelemetry 追踪上下文从 ctx 注入到 gRPC 元数据 m 中
 func Inject(ctx context.Context, p propagation.TextMapPropagator, m *metadata.MD) {
 	p.Inject(ctx, &metadataSupplier{
 		metadata: m,
@@ -47,10 +49,12 @@ func Inject(ctx context.Context, p propagation.TextMapPropagator, m *metadata.MD
 }
 
 // Extract reads cross-cutting concerns from the metadata into a Context.
+//
+// 从 gRPC 元数据 metadata 中提取 OpenTelemetry 追踪上下文，并将其设置到 ctx 中。
 func Extract(ctx context.Context, p propagation.TextMapPropagator, metadata *metadata.MD) sdktrace.SpanContext {
 	ctx = p.Extract(ctx, &metadataSupplier{
 		metadata: metadata,
 	})
 
-	return sdktrace.SpanContextFromContext(ctx)
+	return sdktrace.SpanContextFromContext(ctx) // 从上下文中获取 SpanContext，并返回它
 }

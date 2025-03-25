@@ -38,5 +38,5 @@ var (
 
 // StatusCodeAttr returns an attribute.KeyValue that represents the give c.
 func StatusCodeAttr(c gcodes.Code) attribute.KeyValue {
-	return GRPCStatusCodeKey.Int64(int64(c))
+	return GRPCStatusCodeKey.Int64(int64(c)) // 创建一个 int64 类型的属性，表示 gRPC 状态码。
 }
