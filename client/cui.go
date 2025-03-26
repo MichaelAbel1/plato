@@ -2,12 +2,10 @@ package client
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
-
-	// "net"
+	"os"
 	"time"
 
 	"github.com/gookit/color"
@@ -40,14 +38,14 @@ type VOT struct {
 	Name, Msg, Sep string
 }
 
-func (self VOT) Show(g *gocui.Gui) error {
+func (vot VOT) Show(g *gocui.Gui) error {
 	v, err := g.View("out")
 	if err != nil {
 		//log.Println("No output view")
 		return nil
 	}
-	fmt.Fprintf(v, "%v:%v%v\n", color.FgGreen.Text(self.Name), self.Sep,
-		color.FgYellow.Text(self.Msg))
+	fmt.Fprintf(v, "%v:%v%v\n", color.FgGreen.Text(vot.Name), vot.Sep,
+		color.FgYellow.Text(vot.Msg))
 	return nil
 }
 func viewPrint(g *gocui.Gui, name, msg string, newline bool) {
@@ -232,7 +230,7 @@ func pasteDown(g *gocui.Gui, cv *gocui.View) error {
 
 func RunMain() {
 	// step1 创建chat的核心对象
-	chat = sdk.NewChat(net.ParseIP("0.0.0.0"), 8900, "logic", "12312321", "2131", 0, false)
+	chat = sdk.NewChat(net.ParseIP("0.0.0.0"), 8900, "logic", "12312321", "2131")
 	// step2 创建 GUI 图层对象并进行参与与回调函数的配置
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
@@ -268,13 +266,14 @@ func RunMain() {
 
 	go func() {
 		time.Sleep(10 * time.Second)
-		// 模拟一次断线
-		chat.Close()
-		time.Sleep(3 * time.Second)
-		connID := chat.GetConnID()
-		// 重新连接
-		chat = sdk.NewChat(net.ParseIP("0.0.0.0"), 8900, "logic", "12312321", "2131", connID, true)
-		go doRecv(g)
+		// // 模拟一次断线
+		// chat.Close()
+		// time.Sleep(3 * time.Second)
+		// connID := chat.GetConnID()
+		// // 重新连接
+		// chat = sdk.NewChat(net.ParseIP("0.0.0.0"), 8900, "logic", "12312321", "2131", connID, true)
+		// go doRecv(g)
+		chat.ReConn()
 	}()
 
 	// 启动消费函数
@@ -282,5 +281,5 @@ func RunMain() {
 	if err := g.MainLoop(); err != nil {
 		log.Println(err)
 	}
-	ioutil.WriteFile("chat.log", []byte(buf), 0644)
+	os.WriteFile("chat.log", []byte(buf), 0644)
 }

@@ -145,7 +145,7 @@ func (b *bucket) Flush(reinsert func(*Timer)) {
 		// insert the timer into another bucket belonging to a lower-level wheel.
 		//
 		// In either case, no further lock operation will happen to b.mu.
-		reinsert(t)
+		reinsert(t) // 任务可能会被调整或者插入低一层的时间轮
 
 		e = next
 	}

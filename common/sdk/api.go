@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"encoding/json"
 	"net"
 	"sync"
 	"time"
@@ -37,26 +38,32 @@ type Message struct {
 	Session    string
 }
 
-func NewChat(ip net.IP, port int, nick, userID, sessionID string, connID uint64, isReConn bool) *Chat {
+func NewChat(ip net.IP, port int, nick, userID, sessionID string) *Chat {
 	chat := &Chat{
-		Nick:      nick,
-		UserID:    userID,
-		SessionID: sessionID,
-		conn:      newConnet(ip, port, connID), // 一个聊天室一个连接，在建立连接后就不断监听，并读取数据
-		closeChan: make(chan struct{}),
+		Nick:             nick,
+		UserID:           userID,
+		SessionID:        sessionID,
+		conn:             newConnet(ip, port),
+		closeChan:        make(chan struct{}),
+		MsgClientIDTable: make(map[string]uint64),
 	}
-	go chat.loop()
-	if isReConn {
-		chat.reConn(connID)
-	} else {
-		chat.login()
-	}
-	go chat.heartbeat()
+	go chat.loop() // 建立连接后就不断监听，并读取数据
+	chat.login()
+	go chat.heartbeat() // 保持链接活跃
 	return chat
 }
 
 func (chat *Chat) Send(msg *Message) {
-	chat.conn.recvChan <- msg
+	data, _ := json.Marshal(msg)
+	upMsg := &message.UPMsg{
+		Head: &message.UPMsgHead{
+			ClientID: chat.getClientID(msg.Session),
+			ConnID:   chat.conn.connID,
+		},
+		UPMsgBody: data,
+	}
+	palyload, _ := proto.Marshal(upMsg)
+	chat.conn.send(message.CmdType_UP, palyload)
 }
 
 // Close close chat
@@ -67,8 +74,11 @@ func (chat *Chat) Close() {
 	close(chat.conn.sendChan)
 }
 
-func (chat *Chat) GetConnID() uint64 {
-	return chat.conn.connID
+func (chat *Chat) ReConn() {
+	chat.Lock()
+	defer chat.Unlock()
+	chat.conn.reConn()
+	chat.reConn()
 }
 
 // Recv receive message
@@ -77,6 +87,7 @@ func (chat *Chat) Recv() <-chan *Message {
 }
 
 func (chat *Chat) loop() {
+Loop:
 	for {
 		select {
 		case <-chat.closeChan:
@@ -89,16 +100,34 @@ func (chat *Chat) loop() {
 			}
 			err = proto.Unmarshal(data, mc)
 			if err != nil {
-				panic(err)
+				goto Loop
 			}
 			var msg *Message
 			switch mc.Type {
 			case message.CmdType_ACK:
 				msg = handAckMsg(chat.conn, mc.Payload)
+			case message.CmdType_Push:
+				msg = handPushMsg(chat.conn, mc.Payload)
 			}
 			chat.conn.recvChan <- msg
 		}
 	}
+}
+
+// 每条消息都需要有一个唯一的 clientID，防止重复。
+// 自增 clientID 确保消息有序
+// 防止消息丢失
+// clientID 可以作为幂等标识，确保相同的消息不会被重复处理
+func (chat *Chat) getClientID(sessionID string) uint64 {
+	chat.Lock()
+	defer chat.Unlock()
+	var res uint64
+	if id, ok := chat.MsgClientIDTable[sessionID]; ok {
+		res = id
+	}
+	res++
+	chat.MsgClientIDTable[sessionID] = res
+	return res
 }
 
 func (chat *Chat) login() {
@@ -114,10 +143,10 @@ func (chat *Chat) login() {
 	chat.conn.send(message.CmdType_Login, palyload)
 }
 
-func (chat *Chat) reConn(connID uint64) {
+func (chat *Chat) reConn() {
 	reConn := message.ReConnMsg{
 		Head: &message.ReConnMsgHead{
-			ConnID: connID,
+			ConnID: chat.conn.connID,
 		},
 	}
 	palyload, err := proto.Marshal(&reConn)
