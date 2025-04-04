@@ -17,7 +17,12 @@ func initStateClient() {
 	if err != nil {
 		panic(err)
 	}
-	stateClient = service.NewStateClient(pCli.Conn())
+	// stateClient = service.NewStateClient(pCli.Conn())  // 通过etcd建立连接
+	cli, err := pCli.DialByEndPoint(config.GetGatewayStateServerEndPoint()) // 通过指定地址建立连接 也就是单元化 gateway 与 state server绑定
+	if err != nil {
+		panic(err)
+	}
+	stateClient = service.NewStateClient(cli)
 }
 
 // 在 RPC 调用中用 connID 替换 fd（文件描述符）的主要原因

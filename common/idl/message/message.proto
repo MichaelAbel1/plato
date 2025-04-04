@@ -33,7 +33,8 @@ message UPMsgHead{
 
  message PushMsg{
      uint64 MsgID   = 1;
-     bytes  Content = 2;
+     uint64 SessionID = 2;
+     bytes  Content = 3;
  }
 
 // ACK 消息
@@ -43,6 +44,8 @@ message ACKMsg {
     CmdType Type = 3;
     uint64 ConnID = 4;
     uint64 ClientID = 5;
+    uint64 SessionID = 6;
+    uint64 MsgID = 7;
 }
 
 // 登陆消息

@@ -17,7 +17,11 @@ func initGatewayClient() {
 	if err != nil {
 		panic(err)
 	}
-	gatewayClient = service.NewGatewayClient(pCli.Conn())
+	conn, err := pCli.DialByEndPoint(config.GetStateServerGatewayServerEndpoint()) // 通过指定地址建立连接 也就是单元化 state server 与 gateway 绑定
+	if err != nil {
+		panic(err)
+	}
+	gatewayClient = service.NewGatewayClient(conn)
 }
 
 func DelConn(ctx *context.Context, connID uint64, Payload []byte) error {
